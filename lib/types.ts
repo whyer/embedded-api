@@ -4,6 +4,7 @@ export interface RequestInit {
   headers?: any
   method?: string
   body?: string
+  agent?: any
 }
 
 export interface Headers {
@@ -14,7 +15,8 @@ export interface Response {
   headers: Headers
   ok: boolean
   status: number
-  statusText: string
+  statusText: string,
+  url: string,
   text: () => Promise<string>
   json: () => Promise<any>
 }

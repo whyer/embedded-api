@@ -19,7 +19,9 @@ import {
   RequestInit,
   ScheduleItem,
   User,
+  Response,
 } from './types'
+import { HTTPResponseError } from './HttpResponseError'
 import * as routes from './routes'
 import * as parse from './parse'
 import wrap, { Fetcher, FetcherOptions } from './fetcher'
@@ -77,9 +79,7 @@ export class Api extends EventEmitter {
     const ticketUrl = routes.login(personalNumber)
     const ticketResponse = await this.fetch('auth-ticket', ticketUrl)
 
-    if (!ticketResponse.ok) {
-      throw new Error(`Server Error [${ticketResponse.status}] [${ticketResponse.statusText}] [${ticketUrl}]`)
-    }
+    this.checkAndThrowIfNotSuccess(ticketResponse)
 
     const ticket: AuthTicket = await ticketResponse.json()
 
@@ -124,7 +124,7 @@ export class Api extends EventEmitter {
     if (this.isFake) return fakeResponse(fake.children())
 
     const hemResponse = await this.fetch('hemPage', routes.hemPage, this.session)
-    const doc = html.parse(decode(await hemResponse.text())) 
+    const doc = html.parse(decode(await hemResponse.text()))
     const xsrfToken = doc.querySelector('input[name="__RequestVerificationToken"]').getAttribute('value') || ''
     if (this.session) {
       this.session.headers = {
@@ -166,9 +166,7 @@ export class Api extends EventEmitter {
       body: auth,
     })
 
-    if (!createItemResponse.ok) {
-      throw new Error(`Server Error [${createItemResponse.status}] [${createItemResponse.statusText}] [${cdn}]`)
-    }
+    this.checkAndThrowIfNotSuccess(createItemResponse)
 
     const authData = await createItemResponse.json()
 
@@ -179,15 +177,12 @@ export class Api extends EventEmitter {
         ...this.session?.headers,
         Accept: 'application/json;odata=verbose',
         Auth: authData.token,
-        Cookie: this.getSessionCookie(),
         Host: 'etjanst.stockholm.se',
         Referer: 'https://etjanst.stockholm.se/Vardnadshavare/inloggad2/hem',
       },
     })
 
-    if (!childrenResponse.ok) {
-      throw new Error(`Server Error [${childrenResponse.status}] [${childrenResponse.statusText}] [${childrenUrl}]`)
-    }
+    this.checkAndThrowIfNotSuccess(childrenResponse)
 
     const data = await childrenResponse.json()
     return parse.children(data)
@@ -216,6 +211,7 @@ export class Api extends EventEmitter {
 
     const url = routes.schedule(child.sdsId, from.toISODate(), to.toISODate())
     const response = await this.fetch('schedule', url, this.session)
+    this.checkAndThrowIfNotSuccess(response)
     const data = await response.json()
     return parse.schedule(data)
   }
@@ -264,5 +260,14 @@ export class Api extends EventEmitter {
     this.isLoggedIn = false
     try { await this.clearCookies() } catch (_) { /* do nothing */ }
     this.emit('logout')
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  private checkAndThrowIfNotSuccess(response : Response) {
+    if (response.ok) {
+      // response.status >= 200 && response.status < 300
+      return response
+    }
+    throw new HTTPResponseError(response, response.url)
   }
 }
