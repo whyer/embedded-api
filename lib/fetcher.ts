@@ -10,7 +10,8 @@ export interface CallInfo extends RequestInit {
 }
 
 export interface FetcherOptions {
-  record?: (info: CallInfo, data: string | Blob | ArrayBuffer | any) => Promise<void>
+  record?: (info: CallInfo, data: string | Blob | ArrayBuffer | any) => Promise<void>,
+  agent? : any
 }
 
 export interface Fetcher {
@@ -53,6 +54,7 @@ export default function wrap(fetch: Fetch, options: FetcherOptions = {}): Fetche
         // eslint-disable-next-line max-len
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36',
       },
+      agent: options.agent,
     })
 
     const wrapMethod = (res: Response, methodName: string): void => {
