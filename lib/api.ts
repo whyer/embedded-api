@@ -72,8 +72,12 @@ export class Api extends EventEmitter {
   }
 
   async login(personalNumber: string): Promise<LoginStatusChecker> {
-    if (personalNumber.endsWith('1212121212')) return this.fakeMode()
+    if (personalNumber.endsWith('1212121212')) {
+      console.log('Fake mode')
+      return this.fakeMode()
+    }
 
+    console.log('Login for real')
     this.isFake = false
 
     const ticketUrl = routes.login(personalNumber)
@@ -123,6 +127,7 @@ export class Api extends EventEmitter {
   async getChildren(): Promise<Child[]> {
     if (this.isFake) return fakeResponse(fake.children())
 
+    console.log('XSRF')
     const hemResponse = await this.fetch('hemPage', routes.hemPage, this.session)
     const doc = html.parse(decode(await hemResponse.text()))
     const xsrfToken = doc.querySelector('input[name="__RequestVerificationToken"]').getAttribute('value') || ''
@@ -133,6 +138,7 @@ export class Api extends EventEmitter {
       }
     }
 
+    console.log('API-key')
     const startBundleResponse = await this.fetch('startBundle', routes.startBundle, this.session)
     const startBundleText = await startBundleResponse.text()
 
@@ -145,14 +151,20 @@ export class Api extends EventEmitter {
       }
     }
 
+    console.log('CDN')
     const cdnResponse = await this.fetch('cdn', routes.cdn, this.session)
     const cdn = await cdnResponse.text()
-    const cdnHost = new URL(cdn).host
+    console.log('Got CDN resp', cdn)
+    const cdnHost = 'apigw.stockholm.se'
 
+    console.log('Auth')
     const authResponse = await this.fetch('auth', routes.auth, this.session)
     const auth = await authResponse.text()
 
-    await this.clearCookies()
+    console.log('Clear cookies')
+    // await this.clearCookies()
+
+    console.log('createItem')
     const createItemResponse = await this.fetch('createItem', cdn, {
       method: 'POST',
       headers: {
@@ -170,6 +182,7 @@ export class Api extends EventEmitter {
 
     const authData = await createItemResponse.json()
 
+    console.log('Children')
     const childrenUrl = routes.children
     const childrenResponse = await this.fetch('children', childrenUrl, {
       method: 'GET',
@@ -268,6 +281,7 @@ export class Api extends EventEmitter {
       // response.status >= 200 && response.status < 300
       return response
     }
+    console.log(`HTTP Error Response: [${response.status}] [${response.statusText}] [${response.url}]`)
     throw new HTTPResponseError(response, response.url)
   }
 }
