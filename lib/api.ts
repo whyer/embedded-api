@@ -63,7 +63,7 @@ export class Api extends EventEmitter {
   setSessionCookie(cookie: string) {
     this.session = {
       headers: {
-        Cookie: cookie,
+        // Cookie: cookie,
       },
     }
 
@@ -175,6 +175,8 @@ export class Api extends EventEmitter {
         Origin: 'https://etjanst.stockholm.se',
         Connection: 'keep-alive',
       },
+      keepalive: true,
+      credentials: 'omit',
       body: auth,
     })
 

@@ -3,7 +3,9 @@ export interface AsyncishFunction { (): void | Promise<void> }
 export interface RequestInit {
   headers?: any
   method?: string
-  body?: string
+  body?: string,
+  keepalive?: boolean
+  credentials?: string
   agent?: any
 }
 
